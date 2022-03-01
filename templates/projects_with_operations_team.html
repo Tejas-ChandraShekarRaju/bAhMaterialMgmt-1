@@ -6,6 +6,7 @@
         <tr>
             <th scope="col">Project id</th>
             <th scope="col">Project Name</th>
+            <th scope="col"></th>
         </tr>
         </thead>
         <tbody>
@@ -13,7 +14,9 @@
         <tr>
             <td>{{project[0]}}</td>
             <td>{{project[1]}}</td>
-
+            <td>
+                <a href="/erp/edit_operations_team?project_id={{project[0]}}&&project_name={{project[1]}}">Edit team</a>
+            </td>
         </tr>
         {% endfor %}
 

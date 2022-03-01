@@ -3,22 +3,27 @@
 <div class="my-5 w-100">
     <div class="row mx-3 justify-content-center">
         <div class="col-md-8 col-12 bg-light rounded p-3">
-            <form action="/erp/assign_design_team" method="post">
+            <form action="/erp/edit_operations_team" method="post">
+                <input type="hidden" name="project_id" value="{{request.args['project_id']}}">
                 <div class="row mx-0 mb-4 pb-2 border-bottom form-group">
                     <div class="col-12">
-                        <h4>Assign design team for project {{request.args['project_name']}}</h4>
+                        <h4>Edit operations team for project {{request.args['project_name']}}</h4>
                     </div>
                 </div>
 
                 <div class="row mx-0 mb-3 form-group">
                     <div class="col-6">
-                        <label for="">Select Senior Architect</label>
+                        <label for="">Select Project Coordinator</label>
                     </div>
                     <div class="col-6">
-                        <select name="senior_architect" id=senior_architect" class="form-control select2" required>
+                        <select name="co_ordinator" id=co_ordinator" class="form-control select2" required>
                             <option value=""></option>
-                            {% for i in senior_architects %}
+                            {% for i in co_ordinators %}
+                            {% if i['id']|string == existing_team['Project Coordinator']|string %}
+                            <option value="{{i['id']}}" selected="true">{{i['name']}}</option>
+                            {% else %}
                             <option value="{{i['id']}}">{{i['name']}}</option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
@@ -26,13 +31,17 @@
 
                 <div class="row mx-0 mb-3 form-group">
                     <div class="col-6">
-                        <label for="">Select Architect</label>
+                        <label for="">Select Project Manager</label>
                     </div>
                     <div class="col-6">
-                        <select name="architect" id=architect" class="form-control select2" required>
+                        <select name="project_manager" id=project_manager" class="form-control select2" required>
                             <option value=""></option>
-                            {% for i in architects %}
+                            {% for i in project_managers %}
+                            {% if i['id']|string == existing_team['Project Manager']|string %}
+                            <option value="{{i['id']}}" selected="true">{{i['name']}}</option>
+                            {% else %}
                             <option value="{{i['id']}}">{{i['name']}}</option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
@@ -40,13 +49,17 @@
 
                 <div class="row mx-0 mb-3 form-group">
                     <div class="col-6">
-                        <label for="">Select Structural Designer</label>
+                        <label for="">Select Purchase Executive</label>
                     </div>
                     <div class="col-6">
-                        <select name="structural_designer" id=structural_designer" class="form-control select2" required>
+                        <select name="purchase_executive" id=purchase_executive" class="form-control select2" required>
                             <option value=""></option>
-                            {% for i in structural_designers %}
+                            {% for i in purchase_executives %}
+                            {% if i['id']|string == existing_team['Purchase Executive']|string %}
+                            <option value="{{i['id']}}" selected="true">{{i['name']}}</option>
+                            {% else %}
                             <option value="{{i['id']}}">{{i['name']}}</option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
@@ -54,27 +67,17 @@
 
                 <div class="row mx-0 mb-3 form-group">
                     <div class="col-6">
-                        <label for="">Select Electrical Designer</label>
+                        <label for="">Select QS Engineer</label>
                     </div>
                     <div class="col-6">
-                        <select name="electrical_designer" id=electrical_designer" class="form-control select2" required>
+                        <select name="qs_engineer" id=qs_engineer" class="form-control select2" required>
                             <option value=""></option>
-                            {% for i in electrical_designers %}
+                            {% for i in qs_engineers %}
+                            {% if i['id']|string == existing_team['QS Engineer']|string %}
+                            <option value="{{i['id']}}" selected="true">{{i['name']}}</option>
+                            {% else %}
                             <option value="{{i['id']}}">{{i['name']}}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-
-                <div class="row mx-0 mb-3 form-group">
-                    <div class="col-6">
-                        <label for="">Select PHE Designer</label>
-                    </div>
-                    <div class="col-6">
-                        <select name="phe_designer" id=phe_designer" class="form-control select2" required>
-                            <option value=""></option>
-                            {% for i in phe_designers %}
-                            <option value="{{i['id']}}">{{i['name']}}</option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>

@@ -3,12 +3,14 @@
 <div class="my-5 w-100">
     <div class="row mx-3 justify-content-center">
         <div class="col-md-8 col-12 bg-light rounded p-3">
-            <form action="/erp/assign_design_team" method="post">
+            <form action="/erp/edit_design_team" method="post">
+                <input type="hidden" name="project_id" value="{{request.args['project_id']}}">
                 <div class="row mx-0 mb-4 pb-2 border-bottom form-group">
                     <div class="col-12">
-                        <h4>Assign design team for project {{request.args['project_name']}}</h4>
+                        <h4>Edit design team for project {{request.args['project_name']}}</h4>
                     </div>
                 </div>
+
 
                 <div class="row mx-0 mb-3 form-group">
                     <div class="col-6">
@@ -18,7 +20,11 @@
                         <select name="senior_architect" id=senior_architect" class="form-control select2" required>
                             <option value=""></option>
                             {% for i in senior_architects %}
+                            {% if i['id']|string == existing_team['Senior Architect']|string %}
+                            <option value="{{i['id']}}" selected="true">{{i['name']}}</option>
+                            {% else %}
                             <option value="{{i['id']}}">{{i['name']}}</option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
@@ -32,7 +38,11 @@
                         <select name="architect" id=architect" class="form-control select2" required>
                             <option value=""></option>
                             {% for i in architects %}
+                            {% if i['id']|string == existing_team['Architect']|string %}
+                            <option value="{{i['id']}}" selected="true">{{i['name']}}</option>
+                            {% else %}
                             <option value="{{i['id']}}">{{i['name']}}</option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
@@ -43,10 +53,15 @@
                         <label for="">Select Structural Designer</label>
                     </div>
                     <div class="col-6">
-                        <select name="structural_designer" id=structural_designer" class="form-control select2" required>
+                        <select name="structural_designer" id=structural_designer" class="form-control select2"
+                                required>
                             <option value=""></option>
                             {% for i in structural_designers %}
+                            {% if i['id']|string == existing_team['Structural Designer']|string %}
+                            <option value="{{i['id']}}" selected="true">{{i['name']}}</option>
+                            {% else %}
                             <option value="{{i['id']}}">{{i['name']}}</option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
@@ -57,10 +72,15 @@
                         <label for="">Select Electrical Designer</label>
                     </div>
                     <div class="col-6">
-                        <select name="electrical_designer" id=electrical_designer" class="form-control select2" required>
+                        <select name="electrical_designer" id=electrical_designer" class="form-control select2"
+                                required>
                             <option value=""></option>
                             {% for i in electrical_designers %}
+                            {% if i['id']|string == existing_team['Electrical Designer']|string %}
+                            <option value="{{i['id']}}" selected="true">{{i['name']}}</option>
+                            {% else %}
                             <option value="{{i['id']}}">{{i['name']}}</option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
@@ -74,7 +94,11 @@
                         <select name="phe_designer" id=phe_designer" class="form-control select2" required>
                             <option value=""></option>
                             {% for i in phe_designers %}
+                            {% if i['id']|string == existing_team['PHE Designer']|string %}
+                            <option value="{{i['id']}}" selected="true">{{i['name']}}</option>
+                            {% else %}
                             <option value="{{i['id']}}">{{i['name']}}</option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>

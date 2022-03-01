@@ -1,0 +1,69 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="my-5 w-100">
+    <div class="row mx-3 justify-content-center">
+        <div class="col-md-8 col-12 bg-light rounded p-3">
+            <form action="/erp/contractor_registration" method="post">
+                <div class="row mx-0 mb-4 pb-2 border-bottom form-group">
+                    <div class="col-12">
+                        <h4>Contractor registration</h4>
+                    </div>
+                </div>
+
+
+                <div class="row mx-0 mb-3 form-group">
+                    <div class="col-6">
+                        <label for="name">Contractor Name</label>
+                    </div>
+                    <div class="col-6">
+                        <input name="name" id="name" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="row mx-0 mb-3 form-group">
+                    <div class="col-6">
+                        <label for="code">Contractor Code</label>
+                    </div>
+                    <div class="col-6">
+                        <input name="code" id="code" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="row mx-0 mb-3 form-group">
+                    <div class="col-6">
+                        <label for="pan">Contractor PAN</label>
+                    </div>
+                    <div class="col-6">
+                        <input name="pan" id="pan" class="form-control" required>
+                    </div>
+                </div>
+
+                 <div class="row mx-0 mb-3 form-group">
+                    <div class="col-6">
+                        <label for="address">Address</label>
+                    </div>
+                    <div class="col-6">
+                        <textarea name="address" id="address" rows="3" class="form-control" required></textarea>
+                    </div>
+                </div>
+
+                <div class="row mx-0 mb-3 form-group">
+                    <div class="col-6">
+                        <label for="phone_number">Contact No</label>
+                    </div>
+                    <div class="col-6">
+                        <input type="number" name="phone_number" id="phone_number" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="row justify-content-center mx-0 my-5">
+                    <div class="col-6">
+                        <button class="btn btn-block bg-indigo text-white">Submit</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

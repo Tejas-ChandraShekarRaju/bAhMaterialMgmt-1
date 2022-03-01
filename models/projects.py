@@ -3,7 +3,7 @@ from constants.constants import project_fields
 #create a python class project with fields from project_fields
 
 class projects(object):
-    def __init__(self, project_number, project_name,package_type, project_location, no_of_floors, project_value, date_of_initial_advance, date_of_agreement, sales_executive, site_area, basement_slab_area, gf_slab_area, ff_slab_area, sf_slab_area, tf_slab_area, tef_slab_area, shr_oht, additional_cost, elevation_details, paid_percentage, comments, is_approved):
+    def __init__(self, project_number, project_name,package_type, project_location, no_of_floors, project_value, date_of_initial_advance, date_of_agreement, sales_executive, site_area, basement_slab_area, gf_slab_area, ff_slab_area, sf_slab_area, tf_slab_area, tef_slab_area, shr_oht, additional_cost, elevation_details, paid_percentage, comments, is_approved, cost_sheet, site_inspection_report):
         self.project_number = project_number
         self.project_name = project_name
         self.package_type = package_type
@@ -26,6 +26,8 @@ class projects(object):
         self.paid_percentage = paid_percentage
         self.comments = comments
         self.is_approved = is_approved
+        self.cost_sheet = cost_sheet
+        self.site_inspection_report = site_inspection_report
         #define a defauult constructor
 
         self.package_types = {'Essential':'false','Premium':'false','Luxury':'false','Green Home':'false','Others':'false'}

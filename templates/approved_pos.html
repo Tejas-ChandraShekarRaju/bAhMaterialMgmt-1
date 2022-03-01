@@ -2,7 +2,7 @@
 {% block content %}
 <div class="row mx-5 mt-5 mb-3 pb-2 border-bottom form-group">
     <div class="col-12">
-        <h4>Approved Indents</h4>
+        <h4>Approved Purchase Orders</h4>
     </div>
 </div>
 <div class="p-5 w-100 table-responsive">
@@ -26,6 +26,9 @@
             <td>{{i[4]}} {{i[5]}}</td>
             <td>{{i[7]}}</td>
             <td>{{i[8]}}</td>
+            <td>
+                <a href="/files/{{i[9]}}"></a>
+            </td>
             <td><a href="/erp/view_indent_details?indent_id={{i[0]}}">
                 <i class="fa fa-external-link"></i>
             </a></td>

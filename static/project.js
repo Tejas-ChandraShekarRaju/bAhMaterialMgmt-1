@@ -312,12 +312,11 @@ $(document).ready(function() {
         return false
    })
 
-   $('.submit-create-project-form').on('click', function(event) {
-        event.preventDefault()
-        elevation_details = $(this).parents('form').find('.elevation_details_input')
+   function populateEDandACfields(ele) {
+        elevation_details = $(ele).parents('form').find('.elevation_details_input')
 
-        elevation_details_value = $(this).parents('form').find('.elevation-details').val()
-        $(this).parents('form').find('.elevation-details').each(function(index, element) {
+        elevation_details_value = $(ele).parents('form').find('.elevation-details').val()
+        $(ele).parents('form').find('.elevation-details').each(function(index, element) {
             if (index != 0)
             elevation_details_value += ' &# ' + element.value
         })
@@ -326,15 +325,26 @@ $(document).ready(function() {
 
 
 
-        additional_cost = $(this).parents('form').find('.additional_cost_input')
+        additional_cost = $(ele).parents('form').find('.additional_cost_input')
 
-        additional_cost_value = $(this).parents('form').find('.additional-cost').val()
-        $(this).parents('form').find('.additional-cost').each(function(index, element) {
+        additional_cost_value = $(ele).parents('form').find('.additional-cost').val()
+        $(ele).parents('form').find('.additional-cost').each(function(index, element) {
             if (index != 0)
             additional_cost_value += ' &# ' + element.value
         })
         additional_cost.val(additional_cost_value)
-        $(this).parents('form').submit()
+        $(ele).parents('form').submit()
+   }
+
+
+   $(".edit_project_submit").on('click', function(event) {
+        event.preventDefault()
+        populateEDandACfields(this);})
+
+   $('.submit-create-project-form').on('click', function(event) {
+        event.preventDefault()
+        populateEDandACfields(this);
+
    })
 
 

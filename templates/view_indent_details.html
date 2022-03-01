@@ -77,7 +77,7 @@
             <form class="mt-3 mx-4" action="/erp/upload_po_for_indent" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="indent_id" value="{{result[0]}}">
                 <div class="mb-2">Upload purchase order</div>
-                <input type="file" name="purchase_order" required>
+                <input type="file" name="purchase_order"  accept="application/pdf" required>
                 <div class="row justify-content-center mx-0 my-5">
                     <div class="col-6">
                         <button class="btn btn-block bg-indigo text-white create_bill">Upload</button>

@@ -78,7 +78,10 @@
     {% endif %}
 
     {% if session['role'] in ['Super Admin','COO','QS Head','QS Engineer'] %}
+
     <div class="nav-section-header">Work orders</div>
+    <a href="/erp/contractor_registration" class='nav-link'>Contractor Registration</a>
+    <a href="/erp/view_contractors" class='nav-link'>View Contractors</a>
     <a href="/erp/create_work_order" class='nav-link'>Create work order</a>
     <a href="/erp/view_unsigned_work_order" class='nav-link'>Unsigned work order</a>
 
@@ -103,9 +106,11 @@
     {% if session['role'] in ['Super Admin','COO','Purchase Head','Purchase Executive'] %}
     <div class="nav-section-header">Indents</div>
     <a href="/erp/view_approved_indents" class='nav-link'>Approved Indents</a>
+    <a href="/erp/view_approved_POs" class='nav-link'>Approved POs</a>
     {% endif %}
 
-    {% if session['role'] in ['Super Admin','COO','Design Head','Architect','Structural Designer', 'Electrical Engineer', 'PHE Designer'] %}
+    {% if session['role'] in ['Super Admin','COO','Design Head','Architect','Structural Designer', 'Electrical
+    Engineer', 'PHE Designer'] %}
     <div class="nav-section-header">Design team</div>
     <a href="/erp/drawings" class='nav-link'>Drawings</a>
     <a href="/erp/revised_drawings" class='nav-link'>Revised Drawings</a>

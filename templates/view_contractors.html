@@ -1,0 +1,38 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="p-5 w-100 table-responsive">
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th scope="col">Contractor name</th>
+            <th scope="col">Contractor code</th>
+            <th scope="col">PAN</th>
+            <th scope="col">Phone</th>
+            <th scope="col">Address</th>
+            <th scope="col"></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for contractor in contractors %}
+        <tr>
+            <td>{{contractor[1]}}</td>
+            <td>{{contractor[2]}}</td>
+            <td>{{contractor[3]}}</td>
+            <td>{{contractor[4]}}</td>
+            <td>{{contractor[5]}}</td>
+            <td>
+                <a href="/erp/edit_contractor?contractor_id={{contractor[0]}}">Edit</a>
+            </td>
+            <td>
+                <a onclick="return confirm('Are you sure you want to delete?');" href="/erp/delete_contractor?contractor_id={{contractor[0]}}" class="text-danger">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+
+
+        </tbody>
+    </table>
+
+
+</div>
+{% endblock %}

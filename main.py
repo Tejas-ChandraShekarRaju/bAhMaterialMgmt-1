@@ -22,7 +22,7 @@ app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'buildahome'
 app.config['MYSQL_PASSWORD'] = 'build*2019'
 app.config['MYSQL_DB'] = 'buildahome2016'
-app.config['UPLOAD_FOLDER'] = '../app.buildahome.in/files'
+app.config['UPLOAD_FOLDER'] = '../static/files'
 app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024
 
 mysql = MySQL(app)
@@ -435,6 +435,97 @@ def view_users():
     result = cur.fetchall()
     return render_template('view_users.html', users=result)
 
+@app.route('/contractor_registration', methods=['GET','POST'])
+def contractor_registration():
+    if 'email' not in session:
+        flash('You need to login to continue', 'danger')
+        session['last_route'] = '/erp/vendor_registration'
+        return redirect('/erp/login')
+    if session['role'] not in ['Super Admin','COO','Purchase Head','Purchase Executive']:
+        flash('You do not have permission to view that page', 'danger')
+        return redirect(request.referrer)
+    if request.method == 'GET':
+        return render_template('contractor_registration.html')
+    else:
+        column_names = list(request.form.keys())
+        values = list(request.form.values())
+
+        cur = mysql.connection.cursor()
+        new_vendor_query = 'INSERT into contractors' + str(tuple(column_names)).replace("'", "") + 'values ' + str(
+            tuple(values))
+        cur.execute(new_vendor_query)
+        mysql.connection.commit()
+        flash ('Contractor registered', 'success')
+        return redirect('/erp/view_contractors')
+
+@app.route('/view_contractors', methods=['GET'])
+def view_contractors():
+    if 'email' not in session:
+        flash('You need to login to continue', 'danger')
+        session['last_route'] = '/erp/view_contractors'
+        return redirect('/erp/login')
+
+    if session['role'] not in ['Super Admin','COO','Purchase Head','Purchase Executive']:
+        flash('You do not have permission to view that page', 'danger')
+        return redirect(request.referrer)
+
+    cur = mysql.connection.cursor()
+    contractors_query = 'SELECT id, name, code, pan, phone_number, address FROM contractors'
+    cur.execute(contractors_query)
+    result = cur.fetchall()
+    return render_template('view_contractors.html', contractors=result)
+
+@app.route('/edit_contractor', methods=['GET','POST'])
+def edit_contractor():
+    if 'email' not in session:
+        flash('You need to login to continue', 'danger')
+        session['last_route'] = '/erp/edit_contractor'
+        return redirect('/erp/login')
+    if session['role'] not in ['Super Admin','COO','Purchase Head','Purchase Executive']:
+        flash('You do not have permission to view that page', 'danger')
+        return redirect(request.referrer)
+    if request.method == 'GET':
+        if 'contractor_id' in request.args:
+            cur = mysql.connection.cursor()
+            contractor_query = 'SELECT * from contractors WHERE id=' + request.args['contractor_id']
+            cur.execute(contractor_query)
+            contractor_details = cur.fetchone()
+            return render_template('edit_contractor.html', contractor_details=contractor_details[1:], contractor_id=request.args['contractor_id'])
+    else:
+        column_names = list(request.form.keys())
+
+        update_string = ""
+        for i in column_names[:-1]:
+            update_string += i + '="' + request.form[i] + '", '
+        # Remove the last comma
+        update_string = update_string[:-2]
+        update_vendor_query = 'UPDATE contractors SET ' + update_string + ' WHERE id=' + str(
+            request.form['contractor_id'])
+        cur = mysql.connection.cursor()
+        cur.execute(update_vendor_query)
+        mysql.connection.commit()
+        flash('Contractor updated successfully','success')
+        return redirect('/erp/view_contractors')
+
+@app.route('/delete_contractor', methods=['GET'])
+def delete_contractor():
+    if 'email' not in session:
+        flash('You need to login to continue', 'danger')
+        session['last_route'] = '/erp/delete_contractor'
+        return redirect('/erp/login')
+    if session['role'] not in ['Super Admin','COO','Purchase Head','Purchase Executive']:
+        flash('You do not have permission to view that page', 'danger')
+        return redirect(request.referrer)
+    if request.method == 'GET':
+        if 'contractor_id' in request.args:
+            cur = mysql.connection.cursor()
+            contractor_query = 'DELETE from contractors WHERE id=' + request.args['contractor_id']
+            cur.execute(contractor_query)
+            mysql.connection.commit()
+            flash('Contractor deleted', 'danger')
+            return redirect('/erp/view_contractors')
+
+
 @app.route('/vendor_registration', methods=['GET','POST'])
 def vendor_registration():
     if 'email' not in session:
@@ -770,6 +861,24 @@ def view_bills():
         access_level = session['access_level']
         return render_template('view_bills.html', data=data, access_level=access_level)
 
+@app.route('/delete_bill', methods=['GET'])
+def delete_bill():
+    if 'email' not in session:
+        flash('You need to login to continue', 'danger')
+        session['last_route'] = '/erp/delete_bill'
+        return redirect('/erp/login')
+    if session['role'] not in ['Super Admin','COO','Purchase Head','Purchase Executive']:
+        flash('You do not have permission to view that page', 'danger')
+        return redirect(request.referrer)
+    if request.method == 'GET':
+        if 'bill_id' in request.args:
+            cur = mysql.connection.cursor()
+            delete_bill_query = 'DELETE from wo_bills WHERE id=' + request.args['bill_id']
+            cur.execute(delete_bill_query)
+            mysql.connection.commit()
+            flash('Bill deleted', 'danger')
+            return redirect('/erp/view_bills')
+
 @app.route('/view_approved_bills', methods=['GET'])
 def view_approved_bills():
     if 'email' not in session:
@@ -1035,6 +1144,84 @@ def view_approved_indents():
         else:
             return 'You do not have access to view this page'
 
+@app.route('/view_approved_POs', methods=['GET'])
+def view_approved_POs():
+    if 'email' not in session:
+        flash('You need to login to continue', 'danger')
+        session['last_route'] = '/erp/view_approved_POs'
+        return redirect('/erp/login')
+    if session['role'] not in ['Super Admin', 'COO', 'QS Head', 'QS Engineer','Purchase Executive','Purchase Head']:
+        flash('You do not have permission to view that page', 'danger')
+        return redirect(request.referrer)
+    if request.method == 'GET':
+        cur = mysql.connection.cursor()
+        current_user_role = session['role']
+        if current_user_role in ['Super Admin', 'COO', 'QS Head', 'QS Engineer', 'Purchase Head']:
+            indents_query = 'SELECT indents.id, projects.project_id, projects.project_name, indents.material, indents.quantity, indents.unit, indents.purpose' \
+                            ', App_users.name, indents.timestamp FROM indents INNER JOIN projects on indents.status="po_uploaded" AND indents.project_id=projects.project_id ' \
+                            ' LEFT OUTER JOIN App_users on indents.created_by_user=App_users.user_id'
+
+            cur.execute(indents_query)
+            data = []
+            result = cur.fetchall()
+            for i in result:
+                i = list(i)
+                if len(str(i[8]).strip()) > 0:
+                    i[8] = str(i[8]).strip()
+                    timestamp = datetime.strptime(i[8] + ' 2022 +0530', '%A %d %B %H:%M %Y %z')
+                    IST = pytz.timezone('Asia/Kolkata')
+                    current_time = datetime.now(IST)
+                    time_since_creation = current_time - timestamp
+                    difference_in_seconds = time_since_creation.total_seconds()
+                    difference_in_hours = difference_in_seconds // 3600
+                    if difference_in_hours >= 24:
+                        difference_in_days = difference_in_hours // 24
+                        hours_remaining = difference_in_hours % 24
+                        i[8] = str(int(difference_in_days)) + ' days, ' + str(
+                            int(hours_remaining)) + 'hours'
+                    else:
+                        i[8] = str(int(difference_in_hours)) + ' hours'
+                data.append(i)
+            return render_template('approved_pos.html', result=data)
+        elif current_user_role == 'Purchase Executive':
+            current_user_email = session['email']
+            access_query = 'SELECT access, role from App_users WHERE email=' + str(current_user_email)
+            cur.execute(access_query)
+            res = cur.fetchone()
+            access = res[0]
+            if len(access):
+                access = access.split(',')
+                access_as_int = [int(i) for i in access]
+                access_tuple = tuple(access_as_int)
+                indents_query = 'SELECT indents.id, projects.project_id, projects.project_name, indents.material, indents.quantity, indents.unit, indents.purpose' \
+                                ', App_users.name, indents.timestamp, indents.purchase_order FROM indents INNER JOIN projects on indents.status="po_uploaded" AND indents.project_id=projects.project_id AND indents.project_id IN ' + str(
+                                     access_tuple) + '' \
+                                    ' LEFT OUTER JOIN App_users on indents.created_by_user=App_users.user_id'
+                cur.execute(indents_query)
+                data=[]
+                result = cur.fetchall()
+                for i in result:
+                    i = list(i)
+                    if len(str(i[8]).strip()) > 0:
+                        i[8] = str(i[8]).strip()
+                        timestamp = datetime.strptime(i[8]+' 2022 +0530', '%A %d %B %H:%M %Y %z')
+                        IST = pytz.timezone('Asia/Kolkata')
+                        current_time = datetime.now(IST)
+                        time_since_creation = current_time - timestamp
+                        difference_in_seconds = time_since_creation.total_seconds()
+                        difference_in_hours = difference_in_seconds // 3600
+                        if difference_in_hours >= 24:
+                            difference_in_days = difference_in_hours // 24
+                            hours_remaining = difference_in_hours % 24
+                            i[8] = str(int(difference_in_days)) + ' days, ' + str(
+                                int(hours_remaining)) + 'hours'
+                        else:
+                            i[8] = str(int(difference_in_hours)) + ' hours'
+                    data.append(i)
+                return render_template('approved_pos.html', result=data)
+        else:
+            return 'You do not have access to view this page'
+
 @app.route('/view_indent_details', methods=['GET'])
 def view_indent_details():
     if 'email' not in session:
@@ -1217,7 +1404,7 @@ def create_project():
                 return redirect(request.url)
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                cost_sheet_filename = 'cost_sheet_for_project_'+str(project_id)+'_'+filename
+                cost_sheet_filename = 'cost_sheet_'+str(project_id)+'_'+filename
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], cost_sheet_filename))
 
 
@@ -1228,7 +1415,7 @@ def create_project():
                 return redirect(request.url)
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                site_inspection_report_filename = 'site_inspection_report'+str(project_id)+'_'+filename
+                site_inspection_report_filename = 'site_inspection_report_'+str(project_id)+'_'+filename
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], site_inspection_report_filename))
 
         update_filename_query = 'UPDATE projects set cost_sheet=%s, site_inspection_report=%s WHERE project_id=%s'
@@ -1264,19 +1451,47 @@ def edit_project():
 
         update_string = ""
         for i in column_names[:-1]:
-            update_string += i+'="'+request.form[i] +'", '
+            if request.form[i].strip() != '':
+                update_string += i+'="'+request.form[i] +'", '
         # Remove the last comma
         update_string = update_string[:-2]
         update_project_query = 'UPDATE projects SET '+update_string+' WHERE project_id='+str(request.form['project_id'])
         cur = mysql.connection.cursor()
         cur.execute(update_project_query)
         mysql.connection.commit()
-        if cur.rowcount == 1:
-            flash('Project updated successfully', 'success')
-            return redirect('/erp/view_project_details?project_id='+str(request.form['project_id']))
-        else:
-            flash('Project not updated', 'danger')
-            return redirect(request.referrer)
+        cost_sheet_filename = ''
+        site_inspection_report_filename = ''
+        if 'cost_sheet' in request.files:
+            file = request.files['cost_sheet']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                cost_sheet_filename = 'cost_sheet_' + str(request.form['project_id']) + '_' + filename
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], cost_sheet_filename))
+                update_filename_query = 'UPDATE projects set cost_sheet=%s WHERE project_id=%s'
+                cur.execute(update_filename_query,
+                            (cost_sheet_filename, str(request.form['project_id'])))
+
+        if 'site_inspection_report' in request.files:
+            file = request.files['site_inspection_report']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                site_inspection_report_filename = 'site_inspection_report_' + str(request.form['project_id']) + '_' + filename
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], site_inspection_report_filename))
+                update_filename_query = 'UPDATE projects set site_inspection_report=%s WHERE project_id=%s'
+                cur.execute(update_filename_query,
+                            (site_inspection_report_filename, str(request.form['project_id'])))
+
+        mysql.connection.commit()
+        flash('Project updated successfully', 'success')
+        return redirect('/erp/view_project_details?project_id=' + str(request.form['project_id']))
+
+        # This has to be checked. The if condition is returning false even when everything is okay
+        # if cur.rowcount == 1:
+        #     flash('Project updated successfully', 'success')
+        #     return redirect('/erp/view_project_details?project_id=' + str(request.form['project_id']))
+        # else:
+        #     flash('Project not updated', 'danger')
+        #     return redirect(request.referrer)
 
 @app.route('/unapproved_projects', methods=['GET'])
 def unapproved_projects():
@@ -1289,7 +1504,7 @@ def unapproved_projects():
         return redirect(request.referrer)
     if request.method == 'GET':
         cur = mysql.connection.cursor()
-        unapproved_projects_query = 'SELECT project_id, project_name from projects WHERE is_approved=0 AND archived=0'
+        unapproved_projects_query = 'SELECT project_id, project_name, project_number from projects WHERE is_approved=0 AND archived=0 ORDER BY project_number'
         cur.execute(unapproved_projects_query)
         result = cur.fetchall()
         return render_template('unapproved_projects.html', projects=result)
@@ -1305,12 +1520,12 @@ def approved_projects():
         result = []
         if len(session['projects']) > 0:
             if session['role'] not in ['Super Admin','COO','QS Head','Site Engineer','Purchase Head','Sales Executive']:
-                approved_projects_query = 'SELECT project_id, project_name from projects WHERE is_approved=1 AND archived=0 ' \
-                                          'AND project_id IN '+str(session['projects'])
+                approved_projects_query = 'SELECT project_id, project_name, project_number from projects WHERE is_approved=1 AND archived=0 ' \
+                                          'AND project_id IN '+str(session['projects'])+' ORDER BY project_number'
                 cur.execute(approved_projects_query)
                 result = cur.fetchall()
             else:
-                approved_projects_query = 'SELECT project_id, project_name from projects WHERE is_approved=1 AND archived=0'
+                approved_projects_query = 'SELECT project_id, project_name, project_number from projects WHERE is_approved=1 AND archived=0 ORDER BY project_number'
                 cur.execute(approved_projects_query)
                 result = cur.fetchall()
         return render_template('approved_projects.html', projects=result)
@@ -1326,12 +1541,12 @@ def archived_projects():
         result = []
         if len(session['projects']) > 0:
             if session['role'] not in ['Super Admin','COO','QS Head','Site Engineer','Purchase Head']:
-                archived_projects_query = 'SELECT project_id, project_name from projects WHERE is_approved=1 AND archived=1 ' \
-                                          'AND project_id IN '+str(session['projects'])
+                archived_projects_query = 'SELECT project_id, project_name, project_number from projects WHERE is_approved=1 AND archived=1 ' \
+                                          'AND project_id IN '+str(session['projects'])+' ORDER BY project_number'
                 cur.execute(archived_projects_query)
                 result = cur.fetchall()
             else:
-                archived_projects_query = 'SELECT project_id, project_name from projects WHERE is_approved=1 AND archived=1'
+                archived_projects_query = 'SELECT project_id, project_name, project_number from projects WHERE is_approved=1 AND archived=1 ORDER BY project_number'
                 cur.execute(archived_projects_query)
                 result = cur.fetchall()
         return render_template('archived_projects.html', projects=result)
@@ -1340,8 +1555,8 @@ def archived_projects():
 def view_project_details():
     if request.method == 'GET':
         fields = [
-            'project_name', 'project_location', 'no_of_floors', 'project_value', 'date_of_initial_advance', 'date_of_agreement', 'sales_executive', 'site_area',
-            'gf_slab_area', 'ff_slab_area', 'tf_slab_area', 'tef_slab_area', 'shr_oht', 'elevation_details', 'additional_cost',
+            'project_name','project_number', 'project_location','package_type', 'no_of_floors', 'project_value', 'date_of_initial_advance', 'date_of_agreement', 'sales_executive', 'site_area',
+            'gf_slab_area', 'ff_slab_area', 'sf_slab_area', 'tf_slab_area', 'tef_slab_area', 'shr_oht', 'elevation_details', 'additional_cost',
             'paid_percentage', 'comments', 'cost_sheet', 'site_inspection_report', 'is_approved', 'archived'
         ]
         fields_as_string = ", ".join(fields)
@@ -1350,9 +1565,16 @@ def view_project_details():
         cur.execute(get_details_query)
         result = cur.fetchone()
         details = {}
+
+        sales_executive_query = 'SELECT name from App_users WHERE user_id='+str(result[8])
+        cur.execute(sales_executive_query)
+        sales_executive_query_result = cur.fetchone()
         for i in range (len(fields) - 1) :
             fields_name_to_show = " ".join(fields[i].split('_')).title()
-            details[fields_name_to_show] = result[i]
+            if fields_name_to_show == 'Sales Executive':
+                details[fields_name_to_show] = sales_executive_query_result[0]
+            else:
+                details[fields_name_to_show] = result[i]
         return render_template('view_project_details.html', details=details, approved=str(result[-2]), archived=str(result[-1]))
 
 @app.route('/approve_project', methods=['GET'])
@@ -1381,7 +1603,7 @@ def projects_with_design_team():
     cur = mysql.connection.cursor()
     cur.execute(design_team_query)
     result = cur.fetchall()
-    return render_template('projects_with_no_design_team.html', projects=result)
+    return render_template('projects_with_design_team.html', projects=result)
 
 @app.route('/projects_with_no_operations_team', methods=['GET'])
 def projects_with_no_operations_team():
@@ -1404,7 +1626,7 @@ def projects_with_operations_team():
 @app.route('/assign_design_team', methods=['GET','POST'])
 def assign_design_team():
     if request.method == 'GET':
-        design_team_query = 'SELECT user_id, name, role from App_users WHERE role="Architect" OR role="Structural Designer" OR role="Electrical Designer" OR role="PHE Designer"'
+        design_team_query = 'SELECT user_id, name, role from App_users WHERE role="Architect" OR role="Senior Architect" OR role="Structural Designer" OR role="Electrical Designer" OR role="PHE Designer"'
         cur = mysql.connection.cursor()
         cur.execute(design_team_query)
         architects = []
@@ -1437,9 +1659,69 @@ def assign_design_team():
         flash('Design team has been assigned successfully', 'success')
         return redirect('/erp/projects_with_design_team')
 
+@app.route('/edit_design_team', methods=['GET','POST'])
+def edit_design_team():
+    if request.method == 'GET':
+        if 'project_id' not in request.args:
+            flash('Missing fields', 'danger')
+            return redirect('/erp/projects_with_no_design_team')
+        project_id = request.args['project_id']
+        design_team_query = 'SELECT user_id, name, role from App_users WHERE role="Architect" OR role="Senior Architect" OR role="Structural Designer" OR role="Electrical Designer" OR role="PHE Designer"'
+        cur = mysql.connection.cursor()
+        cur.execute(design_team_query)
+        architects = []
+        structural_designers = []
+        electrical_designers = []
+        phe_designers = []
+        senior_architects = []
+        result = cur.fetchall()
+        for i in result:
+            if i[2] == 'Architect':
+                architects.append({'id': i[0], 'name': i[1]})
+            if i[2] == 'Structural Designer':
+                structural_designers.append({'id': i[0], 'name': i[1]})
+            if i[2] == 'Electrical Designer':
+                electrical_designers.append({'id': i[0], 'name': i[1]})
+            if i[2] == 'PHE Designer':
+                phe_designers.append({'id': i[0], 'name': i[1]})
+            if i[2] == 'Senior Architect':
+                senior_architects.append({'id': i[0], 'name': i[1]})
+        existing_team_query = 'SELECT * FROM project_design_team WHERE project_id='+str(project_id)
+        cur.execute(existing_team_query)
+        res = cur.fetchone()
+        existing_team = {
+            'Architect': res[2],
+            'Structural Designer': res[3],
+            'Electrical Designer': res[4],
+            'PHE Designer': res[5],
+            'Senior Architect': res[6]
+        }
+
+        return render_template('edit_design_team.html',existing_team=existing_team, senior_architects=senior_architects,  architects=architects, structural_designers=structural_designers, electrical_designers=electrical_designers, phe_designers=phe_designers)
+    else:
+
+        cur = mysql.connection.cursor()
+        column_names = list(request.form.keys())
+
+        update_string = ""
+        for i in column_names[:-1]:
+            if request.form[i].strip() != '':
+                update_string += i + '="' + request.form[i] + '", '
+        # Remove the last comma
+        update_string = update_string[:-2]
+        update_project_query = 'UPDATE project_design_team SET ' + update_string + ' WHERE project_id=' + str(
+            request.form['project_id'])
+
+
+        cur.execute(update_project_query)
+        mysql.connection.commit()
+        flash('Design team has been updated successfully', 'success')
+        return redirect('/erp/projects_with_design_team')
+
 @app.route('/assign_operations_team', methods=['GET','POST'])
 def assign_operations_team():
     if request.method == 'GET':
+
         operations_team_query = 'SELECT user_id, name, role from App_users WHERE role="Project Coordinator" OR role="Project Manager" OR role="Purchase Executive" OR role="QS Engineer"'
         cur = mysql.connection.cursor()
         cur.execute(operations_team_query)
@@ -1457,6 +1739,7 @@ def assign_operations_team():
                 purchase_executives.append({'id': i[0], 'name': i[1]})
             if i[2] == 'QS Engineer':
                 qs_engineers.append({'id': i[0], 'name': i[1]})
+
         return render_template('assign_operations_team.html', co_ordinators=co_ordinators, project_managers=project_managers, purchase_executives=purchase_executives, qs_engineers=qs_engineers)
     else:
         column_names = list(request.form.keys())
@@ -1469,6 +1752,59 @@ def assign_operations_team():
         mysql.connection.commit()
         flash('Operations team has been assigned successfully','success')
         return redirect('/erp/projects_with_operations_team')
+
+@app.route('/edit_operations_team', methods=['GET','POST'])
+def edit_operations_team():
+    if request.method == 'GET':
+        if 'project_id' not in request.args:
+            flash('Missing fields', 'danger')
+            return redirect('/erp/projects_with_no_operations_team')
+        project_id = request.args['project_id']
+        operations_team_query = 'SELECT user_id, name, role from App_users WHERE role="Project Coordinator" OR role="Project Manager" OR role="Purchase Executive" OR role="QS Engineer"'
+        cur = mysql.connection.cursor()
+        cur.execute(operations_team_query)
+        co_ordinators = []
+        project_managers = []
+        purchase_executives = []
+        qs_engineers = []
+        result = cur.fetchall()
+        for i in result:
+            if i[2] == 'Project Coordinator':
+                co_ordinators.append({'id': i[0], 'name': i[1]})
+            if i[2] == 'Project Manager':
+                project_managers.append({'id': i[0], 'name': i[1]})
+            if i[2] == 'Purchase Executive':
+                purchase_executives.append({'id': i[0], 'name': i[1]})
+            if i[2] == 'QS Engineer':
+                qs_engineers.append({'id': i[0], 'name': i[1]})
+        existing_team_query = 'SELECT * FROM project_operations_team WHERE project_id=' + str(project_id)
+        cur.execute(existing_team_query)
+        res = cur.fetchone()
+        existing_team = {
+            'Project Coordinator': res[2],
+            'Project Manager': res[3],
+            'Purchase Executive': res[4],
+            'QS Engineer': res[5],
+        }
+        return render_template('edit_operations_team.html',existing_team=existing_team, co_ordinators=co_ordinators, project_managers=project_managers, purchase_executives=purchase_executives, qs_engineers=qs_engineers)
+    else:
+        cur = mysql.connection.cursor()
+        column_names = list(request.form.keys())
+
+        update_string = ""
+        for i in column_names[:-1]:
+            if request.form[i].strip() != '':
+                update_string += i + '="' + request.form[i] + '", '
+        # Remove the last comma
+        update_string = update_string[:-2]
+        update_project_query = 'UPDATE project_operations_team SET ' + update_string + ' WHERE project_id=' + str(
+            request.form['project_id'])
+
+        cur.execute(update_project_query)
+        mysql.connection.commit()
+        flash('Opeartions team has been updated successfully', 'success')
+        return redirect('/erp/projects_with_operations_team')
+
 
 @app.route('/revised_drawings', methods=['GET',"POST"])
 def revised_drawings():
