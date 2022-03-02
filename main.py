@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, request, session, flash, jsonify, url_for
 from flask_mysqldb import MySQL
 import hashlib
-
+import boto3, botocore
 import requests, json
 
 
@@ -24,12 +24,40 @@ app.config['MYSQL_PASSWORD'] = 'build*2019'
 app.config['MYSQL_DB'] = 'buildahome2016'
 app.config['UPLOAD_FOLDER'] = '../static/files'
 app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024
+app.config['S3_SECRET'] = 'RWBMkQ5UOeAUbg3GZmLb5EOq01rXfKUz+aIS4xvG'
+app.config['S3_KEY'] = 'AKIA25KGDJYARPIVQ763'
+app.config['S3_BUCKET'] = 'buildahomeerp'
+app.config['S3_LOCATION'] = 'https://buildahomeerp.s3.ap-south-1.amazonaws.com/'
+
 
 mysql = MySQL(app)
 
 
+s3 = boto3.client(
+   "s3",
+   aws_access_key_id=app.config['S3_KEY'],
+   aws_secret_access_key=app.config['S3_SECRET']
+)
+
 app.secret_key = 'bAhSessionKey'
 ALLOWED_EXTENSIONS = ['pdf','png']
+
+
+def send_to_s3(file, bucket_name, filename, acl="public-read"):
+    try:
+        s3.upload_fileobj(
+            file,
+            bucket_name,
+            filename,
+            ExtraArgs={
+                "ACL": acl,
+                "ContentType": file.content_type  # Set appropriate content type as per the file
+            }
+        )
+    except Exception as e:
+        print("Something Happened: ", e)
+        return e
+    return 'success'
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -55,7 +83,7 @@ def get_projects_for_current_user():
         user_id = session['user_id']
         role = session['role']
         cur = mysql.connection.cursor()
-        if role in ['Super Admin', 'COO', 'QS Head','Purchase Head', 'Site Engineer']:
+        if role in ['Super Admin', 'COO', 'QS Head','Purchase Head', 'Site Engineer', 'Design Head']:
             return ('All')
         elif role == 'Project Coordinator':
             query = 'SELECT project_id from project_operations_team WHERE co_ordinator='+str(user_id)
@@ -130,6 +158,11 @@ def get_projects_for_current_user():
                 projects.append(i[0])
             return tuple(projects)
         else: return []
+
+@app.route('/files/<filename>', methods=['GET'])
+def files(filename):
+    return redirect(app.config['S3_LOCATION']+filename)
+
 
 @app.route('/', methods=['GET'])
 def index():
@@ -297,6 +330,73 @@ def view_inventory():
             material_total_quantity = result[0]
     return render_template('view_inventory.html', projects=projects, procurements=procurements, project=project, material=material, material_total_quantity=material_total_quantity)
 
+
+@app.route('/shifting_entry', methods=['GET','POST'])
+def shifting_entry():
+    if request.method == 'GET':
+        if 'email' not in session:
+            flash('You need to login to continue', 'danger')
+            session['last_route'] = '/erp/view_inventory'
+            return redirect('/erp/login')
+        projects = get_projects()
+        material_quantity_data = {
+            'Cement': '',
+            'Concrete': '',
+            'Steel': '',
+            'M Sand': '',
+            'P Sand': '',
+            'Aggregates': '',
+            'Wall Material': '',
+            'Door Window': '',
+            'Flooring': '',
+            'Sanitary': '',
+            'Hardware': ''
+        }
+
+        return render_template('shifting_entry.html', projects=projects, material_quantity_data=material_quantity_data)
+    else:
+        from_project = request.form['from_project']
+        to_project = request.form['to_project']
+        if from_project == to_project:
+            flash('Shifting entry failed. Cannot shift to same project','danger')
+            return redirect(request.referrer)
+
+        cur = mysql.connection.cursor()
+        material = request.form['material']
+        quantity = request.form['quantity']
+        description = 'Shifting entry'
+
+        material_quantity_query = 'SELECT total_quantity from kyp_material WHERE project_id=' + str(
+            to_project) + ' AND material="' + str(material) + '"'
+        cur.execute(material_quantity_query)
+        result = cur.fetchone()
+        if result is None:
+            flash('Total quantity of material has not been specified under KYP material. Entry not recorded', 'danger')
+            return redirect('/erp/enter_material')
+        if float(result[0]) < (float(quantity)):
+            flash('Total quantity of material exceeded limit specified under KYP material. Entry not recorded',
+                  'danger')
+            return redirect('/erp/enter_material')
+
+        check_if_shifting_is_possible = 'SELECT SUM(quantity) from procurement WHERE project_id=%s AND material=%s'
+        cur.execute(check_if_shifting_is_possible, (from_project, material))
+        result = cur.fetchone()
+        if result is None or int(result[0]) < int(quantity):
+            flash('Shifting entry failed. Insufficient quantity in source project', 'danger')
+            return redirect(request.referrer)
+        deduction_query = "INSERT into procurement (material, description, project_id," \
+                "quantity) values (%s, %s, %s, %s)"
+        values = (material, description, from_project, int(quantity) * -1)
+        cur.execute(deduction_query, values)
+
+        addition_query = "INSERT into procurement (material, description, project_id," \
+                          "quantity) values (%s, %s,  %s, %s)"
+        values = (material, description, to_project, quantity)
+        cur.execute(addition_query, values)
+
+        mysql.connection.commit()
+        flash('Shifting entry successful. Material Shifted!', 'success')
+        return redirect(request.referrer)
 
 @app.route('/create_user', methods=['GET','POST'])
 def create_user():
@@ -1254,7 +1354,10 @@ def upload_po_for_indent():
                 return redirect(request.url)
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], str(indent_id)+'_'+filename))
+                output = send_to_s3(file, app.config["S3_BUCKET"], filename)
+                if output != 'success':
+                    flash('File upload failed', 'danger')
+                    return redirect(request.referrer)
                 cur = mysql.connection.cursor()
                 query = 'UPDATE indents set status=%s, purchase_order=%s WHERE id=%s'
                 values = ('po_uploaded', str(indent_id)+'_'+filename, indent_id )
@@ -1304,7 +1407,10 @@ def upload_signed_wo():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             flash('Work order signed!','success')
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'work_order_'+str(wo_id)+'.pdf'))
+            output = send_to_s3(file, app.config["S3_BUCKET"], 'work_order_'+str(wo_id)+'.pdf')
+            if output != 'success':
+                flash('File upload failed', 'danger')
+                return redirect(request.referrer)
             return 'success'
 
 
@@ -1405,7 +1511,10 @@ def create_project():
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 cost_sheet_filename = 'cost_sheet_'+str(project_id)+'_'+filename
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], cost_sheet_filename))
+                output = send_to_s3(file, app.config["S3_BUCKET"], cost_sheet_filename)
+                if output != 'success':
+                    flash('File upload failed', 'danger')
+                    return redirect(request.referrer)
 
 
         if 'site_inspection_report' in request.files:
@@ -1416,7 +1525,10 @@ def create_project():
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 site_inspection_report_filename = 'site_inspection_report_'+str(project_id)+'_'+filename
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], site_inspection_report_filename))
+                output = send_to_s3(file, app.config["S3_BUCKET"], site_inspection_report_filename)
+                if output != 'success':
+                    flash('File upload failed', 'danger')
+                    return redirect(request.referrer)
 
         update_filename_query = 'UPDATE projects set cost_sheet=%s, site_inspection_report=%s WHERE project_id=%s'
         cur.execute(update_filename_query, (cost_sheet_filename, site_inspection_report_filename, str(project_id)))
@@ -1466,20 +1578,22 @@ def edit_project():
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 cost_sheet_filename = 'cost_sheet_' + str(request.form['project_id']) + '_' + filename
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], cost_sheet_filename))
-                update_filename_query = 'UPDATE projects set cost_sheet=%s WHERE project_id=%s'
-                cur.execute(update_filename_query,
-                            (cost_sheet_filename, str(request.form['project_id'])))
+                output = send_to_s3(file, app.config["S3_BUCKET"], cost_sheet_filename)
+                if output == 'success':
+                    update_filename_query = 'UPDATE projects set cost_sheet=%s WHERE project_id=%s'
+                    cur.execute(update_filename_query,
+                                (cost_sheet_filename, str(request.form['project_id'])))
 
         if 'site_inspection_report' in request.files:
             file = request.files['site_inspection_report']
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 site_inspection_report_filename = 'site_inspection_report_' + str(request.form['project_id']) + '_' + filename
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], site_inspection_report_filename))
-                update_filename_query = 'UPDATE projects set site_inspection_report=%s WHERE project_id=%s'
-                cur.execute(update_filename_query,
-                            (site_inspection_report_filename, str(request.form['project_id'])))
+                output = send_to_s3(file, app.config["S3_BUCKET"], site_inspection_report_filename)
+                if output == 'success':
+                    update_filename_query = 'UPDATE projects set site_inspection_report=%s WHERE project_id=%s'
+                    cur.execute(update_filename_query,
+                                (site_inspection_report_filename, str(request.form['project_id'])))
 
         mysql.connection.commit()
         flash('Project updated successfully', 'success')
@@ -1842,7 +1956,10 @@ def upload_revised_drawing():
                 return redirect(request.url)
             if file and allowed_file(file.filename):
                 drawing_filename = 'rd_'+str(drawing_id)+'.pdf'
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], drawing_filename))
+                output = send_to_s3(file, app.config["S3_BUCKET"], drawing_filename)
+                if output != 'success':
+                    flash('File upload failed', 'danger')
+                    return redirect(request.referrer)
             mysql.connection.commit()
             flash('Revised drawing uploaded successfully', 'success')
             return redirect('/erp/revised_drawings')
@@ -1870,18 +1987,18 @@ def drawings():
     query_string = query_string[:-2]
     drawings = []
     if len(session['projects']) > 0:
-        if session['role'] not in ['Super Admin','Purchase Head', 'COO', 'QS Head','Purchase Head', 'Site Engineer','Design Head']:
+        if session['role'] not in ['Super Admin','Purchase Head', 'COO', 'QS Head','Purchase Head', 'Site Engineer', 'Design Head']:
             drawings_info = "SELECT " + query_string + " FROM projects p LEFT OUTER JOIN " + table_name + " d on " \
                                   "p.project_id=d.project_id AND p.is_approved=1 AND p.archived=0" \
                                       'WHERE p.project_id IN ' + str(session['projects'])
             cur.execute(drawings_info)
             drawings = cur.fetchall()
+
         else:
             drawings_info = "SELECT "+ query_string +" FROM projects p LEFT OUTER JOIN "+table_name+" d on " \
                         "p.project_id=d.project_id WHERE p.is_approved=1 AND p.archived=0"
             cur.execute(drawings_info)
             drawings = cur.fetchall()
-
 
     return render_template('drawings.html', role=session['role'], drawing_names=drawing_names, drawings=drawings)
 
@@ -1908,7 +2025,10 @@ def upload_drawing():
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 drawing_filename = 'drawing_'+str(int(time.time()))+'.pdf'
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], drawing_filename))
+                output = send_to_s3(file, app.config["S3_BUCKET"], drawing_filename)
+                if output != 'success':
+                    flash('File upload failed', 'danger')
+                    return redirect(request.referrer)
         project_id = request.form['project_id']
         drawing_name = request.form['drawing_name']
         drawing_name = drawing_name.lower().replace(' ', '_')

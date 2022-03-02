@@ -1,0 +1,74 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="my-5 w-100">
+    <div class="row mx-3 justify-content-center">
+        <div class="col-md-8 col-12 bg-light rounded p-3">
+            <form action="/erp/shifting_entry" method="post">
+                <div class="row mx-0 mb-4 pb-2 border-bottom form-group">
+                    <div class="col-12">
+                        <h4>Shifting entry</h4>
+                    </div>
+                </div>
+                <div class="row mx-0 mb-3 form-group">
+                    <div class="col-6">
+                        <label for="material">Material</label>
+                    </div>
+                    <div class="col-6">
+                        <select name="material" id="material" class="form-control select2" required>
+                            <option value=""></option>
+                            {% for i in material_quantity_data %}
+                            <option value="{{i}}">{{i}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row mx-0 mb-3 form-group">
+                    <div class="col-6">
+                        <label for="from_project">Shifting from Project</label>
+                    </div>
+                    <div class="col-6">
+                        <select name="from_project" id="from_project" class="form-control select2" required>
+                            <option value=""></option>
+                            {% for i in projects %}
+                            <option value="{{i[0]}}">{{i[1]}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mx-0 mb-3 form-group">
+                    <div class="col-6">
+                        <label for="to_project">Shifting to Project</label>
+                    </div>
+                    <div class="col-6">
+                        <select name="to_project" id="to_project" class="form-control select2" required>
+                            <option value=""></option>
+                            {% for i in projects %}
+                            <option value="{{i[0]}}">{{i[1]}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mx-0 mb-3 form-group">
+                    <div class="col-6">
+                        <label for="quantity">Quantity</label>
+                    </div>
+                    <div class="col-6">
+                        <input name="quantity" id="quantity" class="form-control" required>
+                    </div>
+                </div>
+
+
+                <div class="row justify-content-center mx-0 my-5">
+                    <div class="col-6">
+                        <button class="btn btn-block bg-indigo text-white">Submit</button>
+                    </div>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -2,3 +2,5 @@ flask
 flask_mysqldb
 passlib
 hashlib
+boto3
+botocore

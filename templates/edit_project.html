@@ -369,11 +369,13 @@
                      />
                   <div class="elevation-details-section">
                      {% for x in p.elevation_details.split(' &# ') %}
+                        {% if x != '' %}
                         <input
                         type="text"
                         class="form-control elevation-details mb-2"
                         value="{{x}}"
                         />
+                        {% endif %}
                     {% endfor %}
                      <input
                         type="text"
@@ -396,11 +398,13 @@
                      />
                   <div class="additional-cost-section">
                      {% for x in p.additional_cost.split(' &# ') %}
+                        {% if x != '' %}
                         <input
                         type="text"
                         class="form-control additional-cost mb-2"
                         value="{{x}}"
                         />
+                        {% endif %}
                     {% endfor %}
                      <input
                         type="text"
