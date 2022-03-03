@@ -23,9 +23,9 @@
                         <div>{{x}}</div>
                     {% endfor %}
                     {% elif i=='Cost Sheet'  %}
-                    <a style="word-break: break-all;" target="_blank" href="/erp/static/files/{{details[i]}}">{{details[i]}}</a>
+                    <a style="word-break: break-all;" target="_blank" href="/erp/files/{{details[i]}}">{{details[i]}}</a>
                     {% elif i=='Site Inspection Report'  %}
-                    <a style="word-break: break-all;" target="_blank" href="/erp/static/files/{{details[i]}}">{{details[i]}}</a>
+                    <a style="word-break: break-all;" target="_blank" href="/erp/files/{{details[i]}}">{{details[i]}}</a>
                     {% elif i=='Is Approved' %}
                         {% if  details[i]|string == "0" %}
                         <b>Not approved</b>

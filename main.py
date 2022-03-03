@@ -24,10 +24,10 @@ app.config['MYSQL_PASSWORD'] = 'build*2019'
 app.config['MYSQL_DB'] = 'buildahome2016'
 app.config['UPLOAD_FOLDER'] = '../static/files'
 app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024
-app.config['S3_SECRET'] = 'RWBMkQ5UOeAUbg3GZmLb5EOq01rXfKUz+aIS4xvG'
-app.config['S3_KEY'] = 'AKIA25KGDJYARPIVQ763'
-app.config['S3_BUCKET'] = 'buildahomeerp'
-app.config['S3_LOCATION'] = 'https://buildahomeerp.s3.ap-south-1.amazonaws.com/'
+app.config['S3_SECRET'] = os.environ.get('S3_SECRET')
+app.config['S3_KEY'] = os.environ.get('S3_KEY')
+app.config['S3_BUCKET'] = os.environ.get('S3_BUCKET')
+app.config['S3_LOCATION'] = os.environ.get('S3_LOCATION')
 
 
 mysql = MySQL(app)
@@ -59,6 +59,7 @@ def send_to_s3(file, bucket_name, filename, acl="public-read"):
         return e
     return 'success'
 
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -67,7 +68,7 @@ def get_projects():
     cur = mysql.connection.cursor()
     projects = []
     if len(session['projects']) > 0:
-        if session['role'] not in ['Super Admin', 'COO', 'QS Head','Purchase Head', 'Site Engineer']:
+        if session['role'] not in ['Super Admin', 'COO', 'QS Head','Purchase Head', 'Site Engineer', 'Design Head']:
             query = 'SELECT project_id, project_name from projects WHERE is_approved=1 AND archived=0 ' \
                                       'AND project_id IN ' + str(session['projects'])
             cur.execute(query)
@@ -1930,6 +1931,10 @@ def revised_drawings():
             reviewed_drawings_query = 'SELECT id, type, name from revised_drawings WHERE project_id='+str(request.args['project_id'])
             cur.execute(reviewed_drawings_query)
             drawings = cur.fetchall()
+
+
+
+
         return render_template('revised_drawings.html', drawings=drawings, projects=projects)
 
 
@@ -1990,7 +1995,8 @@ def drawings():
         if session['role'] not in ['Super Admin','Purchase Head', 'COO', 'QS Head','Purchase Head', 'Site Engineer', 'Design Head']:
             drawings_info = "SELECT " + query_string + " FROM projects p LEFT OUTER JOIN " + table_name + " d on " \
                                   "p.project_id=d.project_id AND p.is_approved=1 AND p.archived=0" \
-                                      'WHERE p.project_id IN ' + str(session['projects'])
+                                      ' WHERE p.project_id IN ' + str(session['projects'])
+
             cur.execute(drawings_info)
             drawings = cur.fetchall()
 
